@@ -1,0 +1,101 @@
+@startsalt
+
+{"Layout"
+{SI
+{^"Nav/App-Bar"
+    {T
+        MainMenu <&star> | Favourites <&check> | Settings <&cog>
+    }
+}
+...|...
+{
+    {^"Games"
+    Pick a Game
+    ===
+    {
+        **Minesweeper** |
+        <<minesweeper 
+        XXXXXXX
+        X...X.X
+        X..X..X
+        X.XXX.X
+        XXXXXXX
+        XXXXXXX
+        X.XXX.X
+        XXXXXXX
+        >>
+    }
+    {T
+        +Easy
+        +Medium
+        +Hard
+        +Endless
+    }
+    ---
+    {
+        **Solitaire** |
+        <<solitaire 
+        XXXXXXX
+        XX...XX
+        XX...XX
+        X..X..X
+        X..X..X
+        XX...XX
+        XX...XX
+        XXXXXXX
+        >>
+    }
+    {T
+        +Easy
+        ++Klondike
+        ++Vegas
+        ++Free-Cell
+        +Hard
+        ++Fourty Thieves
+        ++Algerian
+        ++Spider
+    }
+    ---
+    {
+        **Block Game** |
+        <<blockGame 
+        XXXXXXX
+        X...X.X
+        XX.XX.X
+        XXX.XXX
+        XXX..XX
+        XX...XX
+        XXX.XXX
+        XXXXXXX
+        >>
+    }
+    {T
+        +Legacy Endless
+        +Zen MonoSpeed
+        +Custom %
+    }
+    ---
+    {
+        **Snake**
+    }
+    {T
+        +Retro
+        +Scaling
+    }
+    ---
+} | {^"Settings"
+    Settings
+    {
+        {^**User Settings**
+            [X] <color:Blue> __Theme__
+        }
+        {^**System Settings**
+            [X] Keep Score
+            [ ] Cloud Sync <&cloud>| <color:Blue> Setup?
+        }
+    }
+}
+}
+}
+}
+@endsalt
