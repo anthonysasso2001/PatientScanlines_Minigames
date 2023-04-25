@@ -1,9 +1,6 @@
----
-author:
-  - "By: Anthony Sasso"
-date: 2023-04-25
-title: PatientScanlines_Minigame App
----
+# PatientScanlines Minigame App
+
+last updated: 2023-04-25
 
 ## Introduction
 
