@@ -1,0 +1,90 @@
+@startuml PatientScanlines_Solitaire_ClassDiagram
+title Card/Solitaire Class Relationships
+
+!theme vibrant
+skinparam linetype polyline
+
+' this is the footer containing license information, should only need to be included one but may have to re-paste on multi-page documents
+center footer [[https://creativecommons.org/licenses/by-sa/4.0/ <img:https://licensebuttons.net/l/by-sa/4.0/88x31.png>]] [[https://www.gnu.org/licenses/gpl-3.0.en.html <img:https://www.gnu.org/graphics/gplv3-88x31.png>]] \n This work is licensed under a [[https://creativecommons.org/licenses/by-sa/4.0/ CC BY-SA 4.0]],\n code & software examples licensed under [[https://www.gnu.org/licenses/gpl-3.0.en.html GNU GPLv3]].
+
+package GenericSolitaire{
+
+    class Card {
+        -cardSuit: Int
+        -cardValue: Int
+    }
+
+    note right of Card
+        cardValue will be 1-13, with
+        the face cards being 11-13
+    end note
+
+    class CardDeck {
+        -numCards: Int
+        -cards: Card[]
+        ---
+        +CardDeck(numDecks: Int)
+        +shuffle(): Boolean
+        +popCard(): Card
+    }
+
+    abstract class CardOrderRule {
+        +checkPlacement(baseCard: Card,
+        placeCard: Card): Boolean
+    }
+
+    note bottom of CardOrderRule
+        This will be overloaded with
+        specific game implementations
+        for tableau, foundation, etc.
+    end note
+
+    class CardPlayRegion {
+        -suitRule: {abstract} CardOrderRule[]
+        ---
+        +placeCard(inCard: Card): Boolean
+    }
+
+    note left of CardPlayRegion
+        This will be used for the
+        foundation, graveyard, &
+        tableau to keep implementation
+        simpler...
+    end note
+
+    class CardBoard {
+        -mainDeck: CardDeck
+        -tableaus: CardPlayRegion[]
+        -foundations: CardPlayRegion[]
+        -graveyard: CardPlayRegion
+        ....
+        -moveCount: Int
+        ---
+        +getCardFromTableau(tPos: Int): Card
+        +getCardFromFoundation(fPos: Int): Card
+        +getCardFromGraveyard(): Card
+        +getCardFromDeck(): Card
+        ....
+        +placeCardOnTableau(inCard: Card): Boolean
+        +placeCardOnFoundation(inCard: Card): Boolean
+        +placeCardOnGraveyard(inCard: Card): Boolean
+        ....
+        +completeFoundation(fPos: Int): Boolean
+    }
+
+    note left of CardBoard
+        This will be used by UI for game,
+        with rules being calculated by
+        CardPlayRegions
+    end note
+
+    CardOrderRule <|.. Card
+    CardDeck "1" *-- "many" Card
+    CardPlayRegion <|-- CardDeck
+    CardPlayRegion *-- CardOrderRule
+
+    CardBoard "1" *-- "many" CardPlayRegion
+    CardBoard *-- CardDeck
+}
+
+@enduml
