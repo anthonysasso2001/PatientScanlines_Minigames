@@ -1,0 +1,13 @@
+{
+	"recommendations": [
+                // doc extentions
+                "James-Yu.latex-workshop",
+                "valentjn.vscode-ltex",
+                "DavidAnson.vscode-markdownlint",
+                "jebbs.plantuml",
+
+                // flutter extentions
+                "Dart-Code.flutter"
+                // ,"Dart-Code.dart-code"
+	]
+}

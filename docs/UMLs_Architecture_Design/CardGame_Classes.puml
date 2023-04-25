@@ -1,7 +1,11 @@
-@startumlSassoGNL Solitaire_ClassDiagram
+@startuml PatientScanlines_Solitaire_ClassDiagram
 title Card/Solitaire Class Relationships
+
 !theme vibrant
 skinparam linetype polyline
+
+' this is the footer containing license information, should only need to be included one but may have to re-paste on multi-page documents
+center footer [[https://creativecommons.org/licenses/by-sa/4.0/ <img:https://licensebuttons.net/l/by-sa/4.0/88x31.png>]] [[https://www.gnu.org/licenses/gpl-3.0.en.html <img:https://www.gnu.org/graphics/gplv3-88x31.png>]] \n This work is licensed under a [[https://creativecommons.org/licenses/by-sa/4.0/ CC BY-SA 4.0]],\n code & software examples licensed under [[https://www.gnu.org/licenses/gpl-3.0.en.html GNU GPLv3]].
 
 package GenericSolitaire{
 
@@ -42,7 +46,7 @@ package GenericSolitaire{
     }
 
     note left of CardPlayRegion
-        This will be used for the 
+        This will be used for the
         foundation, graveyard, &
         tableau to keep implementation
         simpler...
@@ -73,7 +77,7 @@ package GenericSolitaire{
         with rules being calculated by
         CardPlayRegions
     end note
-    
+
     CardOrderRule <|.. Card
     CardDeck "1" *-- "many" Card
     CardPlayRegion <|-- CardDeck
