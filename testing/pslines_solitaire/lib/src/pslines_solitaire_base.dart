@@ -1,5 +1,7 @@
 // TODO: Put public facing types in this file.
 
+import 'dart:math';
+
 /// Enummeration for Card Rule Responses
 enum CardRes { valid, noValue, bothInvalid, invalidSuit, invalidVal }
 
@@ -90,49 +92,124 @@ class Card extends CardRule {
   int? get value => _cardVal;
 }
 
-/// Class for the draw deck of cards, can contain multiple decks
-class CardDeck {
-  final int _maxSize;
+/// abstract class for CardContainer
+class CardContainer {
+  List<Card> _cards = List<Card>.empty();
   final CardRule _cardRule;
 
-  int currentSize = 0;
-  List<Card> cards = List<Card>.empty();
+  CardContainer(CardRule inRule) : _cardRule = inRule;
+
+  /// Get the cards from the index to the end of the pile, and remove them from the container.
+  ///
+  /// Inputs: index of position FROM the bottom (ex 5 in 6 card foundation is second from the bottom), -1 for last value.
+  ///
+  /// Outputs:
+  ///   - List of cards, or list containing one card for that region if default / invalid index is given.
+  ///   - Null list for empty region.
+  List<Card> _popCards(int index) {
+    List<Card> outCards = List.empty(growable: true);
+
+    if (-1 == index || _cards.length <= index) {
+      outCards.add(_cards.removeLast());
+    } else {
+      outCards.addAll(_cards.getRange(index, _cards.length));
+      _cards.removeRange(index, _cards.length);
+    }
+
+    return outCards;
+  }
+
+  /// Add new cards to the end of the list
+  _addCardsEnd(List<Card> nCards) {
+    _cards.followedBy(nCards);
+  }
+
+  /// Add new cards to the beginning of the list
+  _addCardsStart(List<Card> nCards) {
+    _cards.insertAll(0, nCards);
+  }
+}
+
+/// Class for the draw deck of cards, can contain multiple decks
+class CardDeck extends CardContainer {
+  final int _maxSize;
 
   CardDeck(CardRule inRule, int numDecks)
       : _maxSize = (inRule.suitMax * inRule.valMax * numDecks),
-        _cardRule = inRule {
+        super(inRule) {
     Card newCard = Card(inRule);
 
-    cards = List.filled(_maxSize, Card(_cardRule), growable: false);
+    _cards = List.filled(_maxSize, Card(_cardRule));
 
     // Add 0-max card values to the deck, one for each suit, and add once for each of the decks (ex 2 decks of french cards would be adding 13 card values,of 4 suits, 2 times)
     for (int cardVal = 0; cardVal < inRule.valMax; cardVal++) {
       for (int suit = 0; suit < inRule._suitMax; suit++) {
         for (int deck = 0; deck < numDecks; deck++) {
           newCard.setCardVals(suit, cardVal);
-          cards[cardVal + suit * cardVal] = newCard;
+          _cards[cardVal + suit * cardVal] = newCard;
         }
       }
     }
   }
-}
 
-abstract class CardOrderRule {
-  bool checkPlacement(Card prevCard, Card nextCard);
-}
-
-class CardPlayRegion {
-  final int _numRules;
-  final List<CardOrderRule> _suitRules =
-      List<CardOrderRule>.empty(growable: true);
-
-  CardPlayRegion(int inNumRules, List<CardOrderRule> inRules)
-      : _numRules = inNumRules {
-    _suitRules.addAll(inRules);
+  /// Shuffle the deck with the current cards, randomizing the order.
+  void shuffle() {
+    _cards.shuffle(Random.secure());
   }
 
-  int get numRules => _numRules;
-  List<CardOrderRule>? get rules => _suitRules;
+  /// Wrapper for accessing parents popCard function but limited to only get one at a time.
+  Card get popCard => super._popCards(-1).first;
+}
+
+/// Enummeration of different Card region types based off standard solitaire categories.
+enum RegionType { DrawDeck, Graveyard, Tableau, Foundation }
+
+/// Interface of Card order rule which will be overloaded/implemented for different games, one for each of the four categories of the game. Assumes it is the target.
+abstract class RegionRule {
+  final RegionType _regionType;
+
+  RegionRule(RegionType inRType) : _regionType = inRType;
+
+  /// Overloaded check function for deciding if move is valid.
+  ///
+  /// Inputs:
+  ///   - nCards: The list of cards in the previous region being moved to the current region.
+  ///   - pRType: The Region type the card is coming from.
+  ///   - cEnd: the card at the end of the current region.
+  ///   - eFounds: (optional rule for how many empty foundations exist, defaults to 0).
+  ///   - eTabs: (optional rule for how many empty tableau exist, defualts to 0)
+  ///
+  /// Outputs: Boolean value of if that move can (true) or cannot (false) occur.
+  bool checkPlacement(List<Card> nCards, RegionType pRType, Card cEnd,
+      {int eFounds = 0, int eTabs = 0});
+}
+
+/// Class for the Play Region, Contains its own rule, and the storage for itself.
+class CardPlayRegion extends CardContainer {
+  final RegionRule _regionRule;
+
+  CardPlayRegion(RegionRule inRegionRule, CardRule inCardRule)
+      : _regionRule = inRegionRule,
+        super(inCardRule);
+
+  /// One or more cards being placed at the end of this region, from another region
+  ///
+  /// Inputs:
+  ///   - cRType: current region's type.
+  ///   - nCards: new cards being added from previous region.
+  ///   - pRType: previous region's type.
+  bool placeCards(RegionType cRType, List<Card> nCards, RegionType pRType) {
+    bool outRes = _regionRule.checkPlacement(nCards, pRType, super._cards.last);
+
+    if (outRes) {
+      super._cards.followedBy(nCards);
+    }
+
+    return outRes;
+  }
+
+  /// Wrapper for accessing parents popCard function, but not locked to a single card.
+  List<Card> popCards(index) => super._popCards(index);
 }
 
 class CardBoard {}
