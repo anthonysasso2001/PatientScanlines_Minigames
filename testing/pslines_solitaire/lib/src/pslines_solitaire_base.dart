@@ -40,17 +40,20 @@ class CardRule {
   int get valMax => _valMax;
 }
 
+/// Class for a single card, mainly built as const with get, but also contains set and copy functions.
 class Card extends CardRule {
   //private vars & funcs
 
   int? _cardSuit;
   int? _cardVal;
 
+  //public vars & funcs
+
   /// Set card's values and checks if it is valid, otherwise returns error from checkCard.
   ///
   /// Inputs: suit and value of a card.
   /// Outputs: outputs a response of type CardRes
-  CardRes _setCardVals(int? inSuit, int? inVal) {
+  CardRes setCardVals(int? inSuit, int? inVal) {
     var checkCard = super.checkCard(inSuit, inVal);
 
     //check that the card is valid, otherwise throw exception for first, second, or both vars
@@ -61,17 +64,15 @@ class Card extends CardRule {
     return checkCard;
   }
 
-  //public vars & funcs
-
   /// Initalize Card using previous rule, and this card's values.
   ///
   /// Input:
   ///   inRule = The rule for this card's max suit and value.
   ///   inSuit = This cards current suit.
   ///   inVal = This card's current value.
-  Card(CardRule inRule, int? inSuit, int? inVal)
+  Card(CardRule inRule, {int? inSuit, int? inVal})
       : super(inRule.suitMax, inRule.valMax) {
-    _setCardVals(inSuit, inVal);
+    setCardVals(inSuit, inVal);
   }
 
   /// Copy suit and value from another card, and checks if it is valid.
@@ -79,7 +80,7 @@ class Card extends CardRule {
   /// Inputs: suit and value of a card.
   /// Outputs: outputs a response of type CardRes
   CardRes copyCard(Card inCard) {
-    return _setCardVals(inCard.suit, inCard.value);
+    return setCardVals(inCard.suit, inCard.value);
   }
 
   /// Get the current card's suit.
@@ -89,10 +90,49 @@ class Card extends CardRule {
   int? get value => _cardVal;
 }
 
+/// Class for the draw deck of cards, can contain multiple decks
+class CardDeck {
+  final int _maxSize;
+  final CardRule _cardRule;
+
+  int currentSize = 0;
+  List<Card> cards = List<Card>.empty();
+
+  CardDeck(CardRule inRule, int numDecks)
+      : _maxSize = (inRule.suitMax * inRule.valMax * numDecks),
+        _cardRule = inRule {
+    Card newCard = Card(inRule);
+
+    cards = List.filled(_maxSize, Card(_cardRule), growable: false);
+
+    // Add 0-max card values to the deck, one for each suit, and add once for each of the decks (ex 2 decks of french cards would be adding 13 card values,of 4 suits, 2 times)
+    for (int cardVal = 0; cardVal < inRule.valMax; cardVal++) {
+      for (int suit = 0; suit < inRule._suitMax; suit++) {
+        for (int deck = 0; deck < numDecks; deck++) {
+          newCard.setCardVals(suit, cardVal);
+          cards[cardVal + suit * cardVal] = newCard;
+        }
+      }
+    }
+  }
+}
+
+abstract class CardOrderRule {
+  bool checkPlacement(Card prevCard, Card nextCard);
+}
+
+class CardPlayRegion {
+  final int _numRules;
+  final List<CardOrderRule> _suitRules =
+      List<CardOrderRule>.empty(growable: true);
+
+  CardPlayRegion(int inNumRules, List<CardOrderRule> inRules)
+      : _numRules = inNumRules {
+    _suitRules.addAll(inRules);
+  }
+
+  int get numRules => _numRules;
+  List<CardOrderRule>? get rules => _suitRules;
+}
+
 class CardBoard {}
-
-class CardPlayRegion {}
-
-abstract class CardOrderRule {}
-
-class CardDeck {}

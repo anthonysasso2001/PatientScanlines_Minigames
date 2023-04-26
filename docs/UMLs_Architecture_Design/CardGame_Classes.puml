@@ -31,11 +31,11 @@ package GenericSolitaire{
     class Card {
         -cardSuit: Int
         -cardValue: Int
-        ....
-        -setCardVals(inSuit: Int, inVal: Int): CardRes
         ---
+        +Card(inRule: CardRule)
         +Card(inRule: CardRule, inSuit: Int?, inVal: Int?)
         ....
+        setCardVals(inSuit: Int, inVal: Int): CardRes
         +copyCard(inCard): CardRes
     }
 
@@ -55,8 +55,8 @@ package GenericSolitaire{
     }
 
     abstract class CardOrderRule {
-        +checkPlacement(baseCard: Card,
-        placeCard: Card): Boolean
+        +checkPlacement(prevCard: Card,
+        nextCard: Card): Boolean
     }
 
     note bottom of CardOrderRule
@@ -108,7 +108,7 @@ package GenericSolitaire{
     Card <|-- CardRule : extends
     CardOrderRule <|.. Card : uses
     CardDeck "1" *-- "many" Card : contains
-    CardPlayRegion <|-- CardOrderRule : implements
+    CardPlayRegion "many" *-- "many" CardOrderRule : contains
 
     CardBoard "1" *-- "many" CardPlayRegion : contains
     CardBoard *-- CardDeck : contains
