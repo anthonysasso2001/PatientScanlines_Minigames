@@ -9,14 +9,40 @@ center footer [[https://creativecommons.org/licenses/by-sa/4.0/ <img:https://lic
 
 package GenericSolitaire{
 
+    enum CardRes {
+        valid
+        noValue
+        bothInvalid
+        invalidSuit
+        invalidVal
+    }
+
+    class CardRule{
+        -suitMax: Int
+        -valMax: Int
+        ---
+        +CardRule(inSuitMax: Int, inValMax:Int)
+        +getSuitMax: Int
+        +getValMax: Int
+        ....
+        +checkCard(inSuit: Int, inVal: Int): CardRes
+    }
+
     class Card {
         -cardSuit: Int
         -cardValue: Int
+        ....
+        -setCardVals(inSuit: Int, inVal: Int): CardRes
+        ---
+        +Card(inRule: CardRule, inSuit: Int?, inVal: Int?)
+        ....
+        +copyCard(inCard): CardRes
     }
 
     note right of Card
-        cardValue will be 1-13, with
-        the face cards being 11-13
+        ex for french cards cardVal
+        will be 0-12(non inclusive),
+        with the face cards being 10-12
     end note
 
     class CardDeck {
@@ -77,14 +103,15 @@ package GenericSolitaire{
         with rules being calculated by
         CardPlayRegions
     end note
+    CardRule <|.. CardRes : uses
+    Card <|.. CardRes : uses
+    Card <|-- CardRule : extends
+    CardOrderRule <|.. Card : uses
+    CardDeck "1" *-- "many" Card : contains
+    CardPlayRegion <|-- CardOrderRule : implements
 
-    CardOrderRule <|.. Card
-    CardDeck "1" *-- "many" Card
-    CardPlayRegion <|-- CardDeck
-    CardPlayRegion *-- CardOrderRule
-
-    CardBoard "1" *-- "many" CardPlayRegion
-    CardBoard *-- CardDeck
+    CardBoard "1" *-- "many" CardPlayRegion : contains
+    CardBoard *-- CardDeck : contains
 }
 
 @enduml

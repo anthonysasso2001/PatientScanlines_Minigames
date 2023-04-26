@@ -4,7 +4,7 @@ last updated: 2023-04-25
 
 ## Introduction
 
-Separate documentation and implementation folder exist to help partition the project (although two separate repositories will not be used), the documentation folder is for all the diagrams, design, etc and the patient_scanlines folder is the flutter project itself.
+Separate documentation and testing, & implementation folder exist to help partition the project (although two separate repositories will not be used), the documentation folder is for all the diagrams, design, etc and the patient_scanlines folder is the flutter project itself. The top level testing folder is for dart classes etc. before being integrated into the flutter app itself.
 
 ## Getting Started
 
