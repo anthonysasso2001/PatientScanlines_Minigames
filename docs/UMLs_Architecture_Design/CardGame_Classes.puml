@@ -85,6 +85,7 @@ package GenericSolitaire{
         -graveyard: CardPlayRegion
         ....
         -moveCount: Int
+        -moveLimit: Bool
         ---
         +getCardFromTableau(tPos: Int): Card
         +getCardFromFoundation(fPos: Int): Card
@@ -101,7 +102,7 @@ package GenericSolitaire{
     note left of CardBoard
         This will be used by UI for game,
         with rules being calculated by
-        CardPlayRegions
+        CardPlayRegions.
     end note
     CardRule <|.. CardRes : uses
     Card <|.. CardRes : uses
