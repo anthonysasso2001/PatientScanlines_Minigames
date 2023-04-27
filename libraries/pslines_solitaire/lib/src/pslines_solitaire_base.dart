@@ -98,10 +98,15 @@ class Card extends CardRule {
 ///
 /// i.e CardPlayRegion shouldn't contain a deck in and of itself but does require similar functionality.
 class CardContainer {
-  List<Card> _cards = List<Card>.empty();
+  List<Card> _cards = List<Card>.empty(growable: true);
   final CardRule _cardRule;
 
   CardContainer(CardRule inRule) : _cardRule = inRule;
+
+  /// Clear all cards in container
+  void clearCards() {
+    _cards.clear();
+  }
 
   /// Get the cards from the index to the end of the pile, and remove them from the container.
   ///
@@ -110,13 +115,13 @@ class CardContainer {
   /// Outputs:
   ///   - List of cards, or list containing one card for that region if default / invalid index is given.
   ///   - Null list for empty region.
-  List<Card> popCards(int index) {
+  List<Card> popCards([int index = -1]) {
     List<Card> outCards = List.empty(growable: true);
 
     if (-1 == index || _cards.length <= index) {
       outCards.add(_cards.removeLast());
     } else {
-      outCards.addAll(_cards.getRange(index, _cards.length - 1));
+      outCards.addAll(_cards.getRange(index, _cards.length));
       _cards.removeRange(index, _cards.length);
     }
 
@@ -133,6 +138,8 @@ class CardContainer {
       _cards.insertAll(index, nCards);
     }
   }
+
+  int get numCards => _cards.length;
 }
 
 /// Class for the draw deck of cards, can contain multiple decks
@@ -148,7 +155,7 @@ class CardDeck extends CardContainer {
 
     // Add 0-max card values to the deck, one for each suit, and add once for each of the decks (ex 2 decks of french cards would be adding 13 card values,of 4 suits, 2 times)
     for (int cardVal = 0; cardVal < inRule.valMax; cardVal++) {
-      for (int suit = 0; suit < inRule._suitMax; suit++) {
+      for (int suit = 0; suit < inRule.suitMax; suit++) {
         for (int deck = 0; deck < numDecks; deck++) {
           newCard.setCardVals(suit, cardVal);
           _cards[cardVal + suit * cardVal] = newCard;

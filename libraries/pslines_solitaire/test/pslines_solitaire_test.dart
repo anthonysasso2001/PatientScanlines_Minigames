@@ -132,8 +132,6 @@ void main() {
   });
 
   group('Card', () {
-    final rand = Random();
-
     setUp(() {
       // Additional setup goes here.
     });
@@ -178,6 +176,129 @@ void main() {
       }
 
       expect(res, true);
+    });
+  });
+
+  group('CardContainer', () {
+    setUp(() {
+      // Additional setup goes here.
+    });
+
+    test('succeed: add single card', () {
+      CardContainer testContainer = CardContainer(testRule);
+
+      Card testCard = Card(testRule, 1, 1);
+      List<Card> testList = List.empty(growable: true);
+      testList.add(testCard);
+
+      testContainer.addCards(0, testList);
+
+      expect(testContainer.numCards, testList.length);
+    });
+
+    test('succeed: add max cards', () {
+      CardContainer testContainer = CardContainer(testRule);
+
+      List<Card> testList = List.empty(growable: true);
+      Card newCard = Card(testRule);
+
+      for (int cardVal = 0; cardVal < testRule.valMax; cardVal++) {
+        for (int suit = 0; suit < testRule.suitMax; suit++) {
+          newCard.setCardVals(suit, cardVal);
+          testList.add(newCard);
+        }
+      }
+
+      testContainer.addCards(0, testList);
+
+      expect(testContainer.numCards, testList.length);
+    });
+
+    test('succeed: add one suit and pop last', () {
+      CardContainer testContainer = CardContainer(testRule);
+
+      List<Card> testList = List.empty(growable: true);
+      Card newCard = Card(testRule);
+
+      for (int cardVal = 0; cardVal < testRule.valMax; cardVal++) {
+        newCard.setCardVals(0, cardVal);
+        testList.add(newCard);
+      }
+
+      testContainer.addCards(0, testList);
+
+      var resCard = testContainer.popCards();
+
+      expect(resCard.first.value, testList.last.value);
+    });
+
+    test('succeed: add one suit and pop first', () {
+      CardContainer testContainer = CardContainer(testRule);
+
+      List<Card> testList = List.empty(growable: true);
+      Card newCard = Card(testRule);
+
+      for (int cardVal = 0; cardVal < testRule.valMax; cardVal++) {
+        newCard.setCardVals(0, cardVal);
+        testList.add(newCard);
+      }
+
+      testContainer.addCards(0, testList);
+
+      var resCard = testContainer.popCards(0);
+
+      expect(resCard.first.value, testList.first.value);
+    });
+
+    test('succeed: add one suit and pop all', () {
+      CardContainer testContainer = CardContainer(testRule);
+
+      List<Card> testList = List.empty(growable: true);
+      for (int cardVal = 0; cardVal < testRule.valMax; cardVal++) {
+        Card newCard = Card(testRule, 0, cardVal);
+        testList.add(newCard);
+      }
+
+      testContainer.addCards(0, testList);
+
+      //run 100 times just to check
+      int testIter = maxVal + 1;
+
+      var resList = testContainer.popCards(0);
+
+      bool res = true;
+
+      for (int i = 0; i < maxVal; i++) {
+        if (resList[i].value != testList[i].value) res = false;
+      }
+
+      expect(res, true);
+    });
+
+    test('succeed: add one suit and pop random', () {
+      CardContainer testContainer = CardContainer(testRule);
+
+      List<Card> testList = List.empty(growable: true);
+      for (int cardVal = 0; cardVal < testRule.valMax; cardVal++) {
+        Card newCard = Card(testRule, 0, cardVal);
+        testList.add(newCard);
+      }
+
+      testContainer.addCards(0, testList);
+
+      //run 100 times just to check
+      int testIter = maxVal + 1;
+
+      for (int i = 0; i < testIter; i++) {
+        if (testContainer.numCards > 0) {
+          var index = rand.nextInt(testContainer.numCards);
+          var resList = testContainer.popCards(index);
+
+          expect(resList.first.value, testList[index].value);
+        } else {
+          break;
+        }
+      }
     });
   });
 }
