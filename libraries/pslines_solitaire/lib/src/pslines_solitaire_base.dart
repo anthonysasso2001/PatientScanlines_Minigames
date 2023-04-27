@@ -74,7 +74,7 @@ class Card extends CardRule {
   ///   inRule = The rule for this card's max suit and value.
   ///   inSuit = This cards current suit.
   ///   inVal = This card's current value.
-  Card(CardRule inRule, {int? inSuit, int? inVal})
+  Card(CardRule inRule, [int? inSuit, int? inVal])
       : super(inRule.suitMax, inRule.valMax) {
     setCardVals(inSuit, inVal);
   }

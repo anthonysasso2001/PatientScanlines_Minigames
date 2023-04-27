@@ -7,12 +7,11 @@ import 'package:test/test.dart';
 void main() {
   final rand = Random();
   final int maxInt = 1 << 32;
+  final int maxSuit = 4;
+  final int maxVal = 13;
+  final testRule = CardRule(maxSuit, maxVal);
 
   group('CardRule', () {
-    final int maxSuit = 4;
-    final int maxVal = 13;
-    final testRule = CardRule(maxSuit, maxVal);
-
     setUp(() {
       // Additional setup goes here.
     });
@@ -139,8 +138,46 @@ void main() {
       // Additional setup goes here.
     });
 
-    test('fail: ', () {
-      expect(true, true);
+    test('fail: constructor with bad values', () {
+      Card testCard = Card(testRule, -1, -1);
+
+      bool res = true;
+
+      if (testCard.suit == null || testCard.value == null) {
+        res = false;
+      }
+
+      expect(res, false);
+    });
+
+    test('succeed: constructor with bad values', () {
+      Card testCard =
+          Card(testRule, rand.nextInt(maxSuit - 1), rand.nextInt(maxVal - 1));
+
+      bool res = true;
+
+      if (testCard.suit == null || testCard.value == null) {
+        res = false;
+      }
+
+      expect(res, true);
+    });
+
+    test('succeed: copy another card', () {
+      Card checkCard =
+          Card(testRule, rand.nextInt(maxSuit - 1), rand.nextInt(maxVal - 1));
+
+      Card testCard = Card(testRule);
+      testCard.checkCard(checkCard.suit, checkCard.value);
+
+      bool res = true;
+
+      if (testCard.suit == checkCard.suit ||
+          testCard.value == checkCard.value) {
+        res = false;
+      }
+
+      expect(res, true);
     });
   });
 }
