@@ -111,7 +111,7 @@ class CardContainer {
   int get numCards => _cards.length;
 
   /// Get a copy of index cards from the list.
-  List<Card> get peekCards([int index=1]) => _cards.getRange(_cards.length-index, _cards.length).toList();
+  List<Card> get peekCards => _cards.toList();
 
   Card get peekLast => _cards.last;
 
@@ -126,7 +126,7 @@ class CardContainer {
   /// Get the cards from the index to the end of the pile, and remove them from the container.
   ///
   /// Inputs: index of position from the top (with the last card being the face up one), -1 for last value.
-  /// Outputs: List of cards, or list containing one card for that region if default / invalid index is given.
+  /// Outputs: List of cards, or list containing one card for that region if default index is given.
   List<Card> popCards([int index = -1]) {
     List<Card> outCards = List.empty(growable: true);
 
@@ -170,7 +170,6 @@ class CardDeck {
       : _cycleMax = inCyMax,
         _graveyard = CardContainer(inRule, RegionType.graveyard),
         _drawDeck = CardContainer(inRule, RegionType.drawDeck) {
-
     // Add 0-max card values to the deck, one for each suit, and add once for each of the decks (ex 2 decks of french cards would be adding 13 card values,of 4 suits, 2 times)
     for (int cardVal = 0; cardVal < inRule.valMax; cardVal++) {
       for (int suit = 0; suit < inRule.suitMax; suit++) {
@@ -189,12 +188,18 @@ class CardDeck {
   List<Card> get peekDraw => _drawDeck.peekCards;
 
   /// Get the last card (top) of the draw deck.
+  Card get peekLastDraw => _drawDeck.peekLast;
+
+  /// Get the number of cards in the draw deck
   int get numDraw => _drawDeck.numCards;
 
   /// Get all cards in the graveyard without removing them.
   List<Card> get peekGrave => _graveyard.peekCards;
 
   /// Get last card (top) of the graveyard.
+  Card get peekLastGrave => _graveyard.peekLast;
+
+  /// Get the number of cards in the graveyard
   int get numGrave => _graveyard.numCards;
 
   /// Shuffle the deck, graveyard, & other cards back into drawDeck (resets deck to full)
@@ -210,10 +215,10 @@ class CardDeck {
   /// Draw numDraw cards from the top to front (topmost is end of array)
   List<Card> drawCards([int numDraw = 1]) {
     //goes from back to front, -1 since 0 is first index
-    return _drawDeck.popCards(_drawDeck.numCards - numDraw - 1);
+    return _drawDeck.popCards(_drawDeck.numCards - numDraw);
   }
 
-  // Add numDispose cards from the deck onto graveyard, in reverse order top of deck becomes first card added to grave.
+  // Add numDispose cards from the deck onto graveyard, in reverse order so top of deck becomes first card added to grave.
   void addToGraveyard([int numDispose = 1]) {
     var dCards = drawCards(numDispose);
 
@@ -236,10 +241,10 @@ class CardDeck {
   }
 }
 
-/// structure of possible region card orders (ascending, descending, both, and looping options).
-
+/// Enumeration of possible region card orders.
 enum OrderDirection { ascending, descending, both }
 
+/// Structure for combinations of card orders, and loop (t/f).
 class CardOrder {
   OrderDirection order;
   bool loop;
@@ -251,7 +256,6 @@ class CardOrder {
 
 /// Interface of Card order rule which will be overloaded/implemented for different games, one for each of the four categories of the game. Assumes it is the target.
 class RegionRule {
-  // ignore: unused_field
   final CardOrder _regionOrder;
 
   RegionRule(CardOrder inOrder) : _regionOrder = inOrder;
@@ -260,44 +264,82 @@ class RegionRule {
     if (nCards
         .any((element) => (element.suit == null || element.value == null))) {
       return false;
-    } else if (nCards.first.value != (cEnd!.value! + 1)) {
-      return false;
     }
 
     List<Card> checkList = List<Card>.empty();
-    if (_regionOrder.order == OrderDirection.ascending) {
+    // Check the type or direction, then run check for end of current column and first value in new cards.
+    if (_regionOrder.order == OrderDirection.ascending &&
+        (cEnd == null || nCards.first.value == cEnd.value! + 1)) {
       checkList.addAll(nCards);
-    } else if (_regionOrder.order == OrderDirection.descending) {
+    } else if (_regionOrder.order == OrderDirection.descending &&
+        (cEnd == null || nCards.first.value == cEnd.value! - 1)) {
+      // Reverse the deck for descending to check the same as ascending now that we know cEnd is correct.
       checkList.addAll(nCards.reversed);
+    } else if (_regionOrder.order == OrderDirection.both &&
+        (cEnd == null ||
+            (nCards.first.value == cEnd.value! + 1 ||
+                nCards.first.value == cEnd.value! - 1))) {
+      checkList.addAll(nCards);
+    } else {
+      return false;
     }
 
-    if (_regionOrder.order == OrderDirection.both) {
-    } else {
-      Card? tempCard;
-      for (var i in checkList) {
-        if (tempCard != null) {
-          if (i.value == (tempCard.value! + 1)) {
-            //
-          } else {
-            if ((tempCard.value! != tempCard.valMax) && (i.value! != 0)) {
+    // Set first check to null since cEnd is already checked.
+    Card? tempCard;
+
+    // Check that the order is correct, one directional are sorted in same dir, so we can treat the same, otherwise check for both case + always for loop case.
+    for (var i in checkList) {
+      // Should never be null first, but may be if where it's being placed is empty. In that case just skip first check.
+      if (tempCard != null) {
+        // Check if its bidirectional or not.
+        if (_regionOrder.order == OrderDirection.both) {
+          // Can it loop?
+          if (_regionOrder.loop) {
+            // Check that its not looped above
+            if ((tempCard.value == tempCard.valMax - 1 &&
+                    (i.value != 0 || i.value != tempCard.value! - 1)) ||
+                // Check that its not looped below
+                (tempCard.value == 0 &&
+                    (i.value != tempCard.valMax - 1 ||
+                        i.value != tempCard.value! + 1))) {
+              return false;
+            }
+            // Just check that the value is +/- 1 from previous value, since we already checked loop cases
+            else if ((i.value != tempCard.value! + 1) ||
+                (i.value != tempCard.value! - 1)) {
               return false;
             }
           }
+          // Check that the value is +/- 1 from previous value, since it cannot loop.
+          else if ((i.value != tempCard.value! + 1) ||
+              (i.value != tempCard.value! - 1)) {
+            return false;
+          }
+        } else {
+          // unidirectional only has to check king -> Ace loop since descending was flipped to ace like ascending
+          if (_regionOrder.loop &&
+              (tempCard.value == tempCard.valMax && i.value != 0)) {
+            return false;
+          }
+          // If it cannot loop just check i value is one above temp card
+          else if (i.value != tempCard.value! + 1) {
+            return false;
+          }
         }
-        tempCard = i;
       }
+      tempCard = i;
     }
     return true;
   }
 
-  /// Overloaded check function for deciding if move is valid.
+  /// Check function for deciding if move is valid, if not overridden it will always return true.
   ///
   /// Inputs:
   ///   - nCards: The list of cards in the previous region being moved to the current region.
-  ///   - pRType: The Region type the card is coming from.
+  ///   - pRType: The region type the card is coming from.
   ///   - cEnd: the card at the end of the current region.
-  ///   -
-  ///
+  ///   - cRType: The region type of the current region.
+  ///   - {optional} moveLim: limit for how many cards may move at a time.
   /// Outputs: Boolean value of if that move can (true) or cannot (false) occur.
   bool checkPlacement(
       List<Card> nCards, RegionType pRType, Card? cEnd, RegionType cRType,

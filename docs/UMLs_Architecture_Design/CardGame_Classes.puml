@@ -63,7 +63,7 @@ package GenericSolitaire{
         ---
         +CardContainer(inRule: CardRule, inRType: RegionType)
         +{get} numCards: Int
-        +{get} peekCards(): Card[]
+        +{get} peekCards: Card[]
         +{get} peekLast: Card
         +{get} regionType: RegionType
         ....
@@ -84,18 +84,26 @@ package GenericSolitaire{
         ---
         +CardDeck(inRule: CardRule, inNDecks: Int, inCyMax: Int=0)
         +{get} cycleCount: int
+        +{get} peekDraw: Card[]
+        +{get} peekLastDraw: Card
+        +{get} numDraw: Int
+        +{get} peekGrave: Card[]
+        +{get} peekLastgrave: Card
+        +{get} numGrave: Int
         ....
         +shuffle(otherCards: Card[]): Void
-        +drawCards(numDraw: Int=1): Card[]
+        +drawCards(numDraw: Int=-1): Card[]
         +addToGraveyard(numDispose: Int=1): Void
         +cycleDeck(): Boolean
     }
     CardDeck "1" *-- "2" CardContainer : contains
 
-    class CardOrderRule {
-        +checkPlacement(prevCard: Card,
-        nextCard: Card): Boolean
+    struct CardOrder {
+        +order: OrderDirection
+        +loop: Boolean
     }
+
+    CardOrder <|.. OrderDirection : contains
 
     note left of CardOrderRule
         This will be overloaded with
@@ -149,9 +157,7 @@ package GenericSolitaire{
         CardPlayRegions.
     end note
 
-
-    CardOrderRule <|.. Card : uses
-    CardPlayRegion "many" *-- "many" CardOrderRule : contains
+    CardPlayRegion "many" *-- "many" OrderRule : contains
 
     CardBoard "1" *-- "many" CardPlayRegion : contains
     CardBoard *-- CardDeck : contains
