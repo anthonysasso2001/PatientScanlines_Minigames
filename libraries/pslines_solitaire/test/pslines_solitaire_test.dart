@@ -1,4 +1,5 @@
 // import 'package:pslines_solitaire/pslines_solitaire.dart';
+import 'dart:html';
 import 'dart:math';
 
 import 'package:pslines_solitaire/pslines_solitaire.dart';
@@ -75,7 +76,7 @@ void main() {
     test('fail: both = max', () {
       int testSuit = rand.nextInt(maxInt) + maxSuit;
       int testValue = rand.nextInt(maxInt) + maxVal;
-      ;
+
       CardRes res = testRule.checkCard(testSuit, testValue);
 
       expect(res, CardRes.bothInvalid);
@@ -84,7 +85,7 @@ void main() {
     test('fail: both >= max', () {
       int testSuit = rand.nextInt(maxInt) + maxSuit;
       int testValue = rand.nextInt(maxInt) + maxVal;
-      ;
+
       CardRes res = testRule.checkCard(testSuit, testValue);
 
       expect(res, CardRes.bothInvalid);
@@ -191,7 +192,7 @@ void main() {
       List<Card> testList = List.empty(growable: true);
       testList.add(testCard);
 
-      testContainer.addCards(0, testList);
+      testContainer.addCards(testList, 0);
 
       expect(testContainer.numCards, testList.length);
     });
@@ -209,7 +210,7 @@ void main() {
         }
       }
 
-      testContainer.addCards(0, testList);
+      testContainer.addCards(testList, 0);
 
       expect(testContainer.numCards, testList.length);
     });
@@ -225,7 +226,7 @@ void main() {
         testList.add(newCard);
       }
 
-      testContainer.addCards(0, testList);
+      testContainer.addCards(testList, 0);
 
       var resCard = testContainer.popCards();
 
@@ -243,7 +244,7 @@ void main() {
         testList.add(newCard);
       }
 
-      testContainer.addCards(0, testList);
+      testContainer.addCards(testList, 0);
 
       var resCard = testContainer.popCards(0);
 
@@ -259,15 +260,13 @@ void main() {
         testList.add(newCard);
       }
 
-      testContainer.addCards(0, testList);
-
-      //run 100 times just to check
-      int testIter = maxVal + 1;
+      testContainer.addCards(testList, 0);
 
       var resList = testContainer.popCards(0);
 
       bool res = true;
 
+      // Run the max number of times to guarantee that it will take all out minimally...
       for (int i = 0; i < maxVal; i++) {
         if (resList[i].value != testList[i].value) res = false;
       }
@@ -284,9 +283,9 @@ void main() {
         testList.add(newCard);
       }
 
-      testContainer.addCards(0, testList);
+      testContainer.addCards(testList, 0);
 
-      //run 100 times just to check
+      //run max+1 times just to check popping from a null list
       int testIter = maxVal + 1;
 
       for (int i = 0; i < testIter; i++) {
@@ -299,6 +298,50 @@ void main() {
           break;
         }
       }
+    });
+
+    test('succeed: add one suit and clear', () {
+      CardContainer testContainer = CardContainer(testRule);
+
+      List<Card> testList = List.empty(growable: true);
+      Card newCard = Card(testRule);
+
+      for (int cardVal = 0; cardVal < testRule.valMax; cardVal++) {
+        newCard.setCardVals(0, cardVal);
+        testList.add(newCard);
+      }
+
+      testContainer.addCards(testList, 0);
+
+      testContainer.clearCards();
+
+      var resCard = testContainer.numCards;
+
+      expect(resCard, 0);
+    });
+  });
+
+  group('CardDeck', () {
+    setUp(() {
+      // Additional setup goes here.
+    });
+
+    test('succeed: constructor builds full deck', () {
+      CardDeck testDeck = CardDeck(testRule, 1);
+
+      var resNum = testDeck.numDraw;
+      var expNum = maxVal * maxSuit;
+      expect(resNum, expNum);
+    });
+
+    test('succeed: constructor builds deck of 2-7 decks', () {
+      int deckNum = rand.nextInt(5) + 2;
+      CardDeck testDeck = CardDeck(testRule, deckNum);
+
+      var resNum = testDeck.numDraw;
+      var expNum = maxVal * maxSuit * deckNum;
+
+      expect(resNum, expNum);
     });
   });
 }

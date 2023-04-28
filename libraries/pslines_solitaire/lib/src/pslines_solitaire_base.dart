@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:math';
 
 /// Enumeration for Card Rule Responses
@@ -12,12 +11,18 @@ class CardRule {
   /// The max card face value possible (for french this would be 13 making cards 0 (ace) - 12 (king)).
   final int _valMax;
 
-  /// Initalize with the max values (non inclusive) for suit and value.
+  /// Initialize with the max values (non inclusive) for suit and value.
   CardRule(int inSuitMax, int inValMax)
       : _suitMax = inSuitMax,
         _valMax = inValMax;
 
-  /// Checks that the inputed suit and value are valid under the cardset rules.
+  /// Get copy of card's max suit value.
+  int get suitMax => _suitMax;
+
+  /// Get copy of card's max value.
+  int get valMax => _valMax;
+
+  /// Checks that the inputted suit and value are valid under the card-set rules.
   ///
   /// Inputs: suit and value of a card.
   /// Outputs: outputs a response of type CardRes
@@ -36,22 +41,32 @@ class CardRule {
       return CardRes.valid;
     }
   }
-
-  /// Get copy of card's max suit value.
-  int get suitMax => _suitMax;
-
-  /// Get copy of card's max value.
-  int get valMax => _valMax;
 }
 
 /// Class for a single card, mainly built as const with get, but also contains set and copy functions.
 class Card extends CardRule {
-  //private vars & funcs
-
+  /// Current Suit of this card.
   int? _cardSuit;
+
+  /// Current value of this card.
   int? _cardVal;
 
-  //public vars & funcs
+  /// Initialize Card using previous rule, and this card's values.
+  ///
+  /// Input:
+  ///   inRule = The rule for this card's max suit and value.
+  ///   inSuit = This cards current suit.
+  ///   inVal = This card's current value.
+  Card(CardRule inRule, [int? inSuit, int? inVal])
+      : super(inRule.suitMax, inRule.valMax) {
+    setCardVals(inSuit, inVal);
+  }
+
+  /// Get the card's current suit.
+  int? get suit => _cardSuit;
+
+  /// Get the card's current value.
+  int? get value => _cardVal;
 
   /// Set card's values and checks if it is valid, otherwise returns error from checkCard.
   ///
@@ -68,17 +83,6 @@ class Card extends CardRule {
     return checkCard;
   }
 
-  /// Initalize Card using previous rule, and this card's values.
-  ///
-  /// Input:
-  ///   inRule = The rule for this card's max suit and value.
-  ///   inSuit = This cards current suit.
-  ///   inVal = This card's current value.
-  Card(CardRule inRule, [int? inSuit, int? inVal])
-      : super(inRule.suitMax, inRule.valMax) {
-    setCardVals(inSuit, inVal);
-  }
-
   /// Copy suit and value from another card, and checks if it is valid.
   ///
   /// Inputs: suit and value of a card.
@@ -86,22 +90,33 @@ class Card extends CardRule {
   CardRes copyCard(Card inCard) {
     return setCardVals(inCard.suit, inCard.value);
   }
-
-  /// Get the current card's suit.
-  int? get suit => _cardSuit;
-
-  /// Get the current card's value.
-  int? get value => _cardVal;
 }
+
+/// Enumeration of different Card region types based off standard solitaire categories.
+enum RegionType { drawDeck, graveyard, tableau, foundation }
 
 /// Super class for CardDeck and CardPlayRegion as both store cards but in different contexts.
 ///
 /// i.e CardPlayRegion shouldn't contain a deck in and of itself but does require similar functionality.
 class CardContainer {
-  List<Card> _cards = List<Card>.empty(growable: true);
+  final List<Card> _cards = List<Card>.empty(growable: true);
   final CardRule _cardRule;
+  final RegionType _regionType;
 
-  CardContainer(CardRule inRule) : _cardRule = inRule;
+  CardContainer(CardRule inRule, RegionType inRType)
+      : _cardRule = inRule,
+        _regionType = inRType;
+
+  /// Get the number of cards in the container.
+  int get numCards => _cards.length;
+
+  /// Get a copy of index cards from the list.
+  List<Card> get peekCards([int index=1]) => _cards.getRange(_cards.length-index, _cards.length).toList();
+
+  Card get peekLast => _cards.last;
+
+  /// Get the type of region that this container represents.
+  RegionType get regionType => _regionType;
 
   /// Clear all cards in container
   void clearCards() {
@@ -111,10 +126,7 @@ class CardContainer {
   /// Get the cards from the index to the end of the pile, and remove them from the container.
   ///
   /// Inputs: index of position from the top (with the last card being the face up one), -1 for last value.
-  ///
-  /// Outputs:
-  ///   - List of cards, or list containing one card for that region if default / invalid index is given.
-  ///   - Null list for empty region.
+  /// Outputs: List of cards, or list containing one card for that region if default / invalid index is given.
   List<Card> popCards([int index = -1]) {
     List<Card> outCards = List.empty(growable: true);
 
@@ -131,51 +143,103 @@ class CardContainer {
   /// Add new cards to the list, before the index's location (indexed value would become after).
   ///
   /// Inputs: index of the position from the top (with the last card being the face up one), -1 for adding at the end.
-  void addCards(int index, List<Card> nCards) {
+  bool addCards(List<Card> nCards, [int index = -1]) {
+    if (nCards.any((element) =>
+        CardRes.valid != _cardRule.checkCard(element.suit, element.value))) {
+      return false;
+    }
+
     if (-1 == index || _cards.length <= index) {
       _cards.addAll(nCards);
     } else {
       _cards.insertAll(index, nCards);
     }
-  }
 
-  int get numCards => _cards.length;
+    return true;
+  }
 }
 
 /// Class for the draw deck of cards, can contain multiple decks
-class CardDeck extends CardContainer {
-  final int _maxSize;
+class CardDeck {
+  final int _cycleMax;
+  int _cycleCount = 0;
+  final CardContainer _drawDeck;
+  final CardContainer _graveyard;
 
-  CardDeck(CardRule inRule, int numDecks)
-      : _maxSize = (inRule.suitMax * inRule.valMax * numDecks),
-        super(inRule) {
-    Card newCard = Card(inRule);
-
-    _cards = List.filled(_maxSize, Card(_cardRule));
+  CardDeck(CardRule inRule, int inNDecks, [int inCyMax = 0])
+      : _cycleMax = inCyMax,
+        _graveyard = CardContainer(inRule, RegionType.graveyard),
+        _drawDeck = CardContainer(inRule, RegionType.drawDeck) {
 
     // Add 0-max card values to the deck, one for each suit, and add once for each of the decks (ex 2 decks of french cards would be adding 13 card values,of 4 suits, 2 times)
     for (int cardVal = 0; cardVal < inRule.valMax; cardVal++) {
       for (int suit = 0; suit < inRule.suitMax; suit++) {
-        for (int deck = 0; deck < numDecks; deck++) {
-          newCard.setCardVals(suit, cardVal);
-          _cards[cardVal + suit * cardVal] = newCard;
+        for (int deck = 0; deck < inNDecks; deck++) {
+          Card newCard = Card(inRule, suit, cardVal);
+          _drawDeck.addCards(List<Card>.filled(1, newCard));
         }
       }
     }
   }
 
-  /// Shuffle the deck with the current cards, randomizing the order.
-  void shuffle() {
-    _cards.shuffle(Random.secure());
+  /// Get current cycle count for the deck
+  int get cycleCount => _cycleCount;
+
+  /// Get all cards in the draw deck, without removing them.
+  List<Card> get peekDraw => _drawDeck.peekCards;
+
+  /// Get the last card (top) of the draw deck.
+  int get numDraw => _drawDeck.numCards;
+
+  /// Get all cards in the graveyard without removing them.
+  List<Card> get peekGrave => _graveyard.peekCards;
+
+  /// Get last card (top) of the graveyard.
+  int get numGrave => _graveyard.numCards;
+
+  /// Shuffle the deck, graveyard, & other cards back into drawDeck (resets deck to full)
+  void shuffle(List<Card> otherCards) {
+    List<Card> cards = List.empty(growable: true);
+    cards.addAll(otherCards);
+    cards.addAll(_drawDeck.popCards(0));
+    cards.addAll(_graveyard.popCards(0));
+    cards.shuffle(Random.secure());
+    _drawDeck.addCards(cards);
+  }
+
+  /// Draw numDraw cards from the top to front (topmost is end of array)
+  List<Card> drawCards([int numDraw = 1]) {
+    //goes from back to front, -1 since 0 is first index
+    return _drawDeck.popCards(_drawDeck.numCards - numDraw - 1);
+  }
+
+  // Add numDispose cards from the deck onto graveyard, in reverse order top of deck becomes first card added to grave.
+  void addToGraveyard([int numDispose = 1]) {
+    var dCards = drawCards(numDispose);
+
+    _graveyard.addCards(dCards.reversed.toList());
+  }
+
+  /// Cycle the deck and graveyard so start(bottom) of graveyard becomes end(top) for draw deck.
+  bool cycleDeck() {
+    // Cannot cycle if max is reached (assuming there is a max # of times), graveyard is empty, or deck is not empty
+    if ((_cycleMax != 0 && _cycleCount >= _cycleMax) ||
+        _graveyard.numCards == 0 ||
+        _drawDeck.numCards != 0) {
+      return false;
+    }
+
+    // ex draw = null, grave = 1,2,3,4(top) _> draw = 4,3,2,1(top) grave=null
+    _drawDeck.addCards(_graveyard.popCards(0).reversed.toList());
+    _cycleCount++;
+    return true;
   }
 }
 
-/// Enumeration of different Card region types based off standard solitaire categories.
-enum RegionType { drawDeck, graveyard, tableau, foundation }
+/// structure of possible region card orders (ascending, descending, both, and looping options).
 
 enum OrderDirection { ascending, descending, both }
 
-/// struct of possible region card orders (ascending, descending, both, and looping options).
 class CardOrder {
   OrderDirection order;
   bool loop;
@@ -188,14 +252,11 @@ class CardOrder {
 /// Interface of Card order rule which will be overloaded/implemented for different games, one for each of the four categories of the game. Assumes it is the target.
 class RegionRule {
   // ignore: unused_field
-  final RegionType _regionType;
   final CardOrder _regionOrder;
 
-  RegionRule(RegionType inRType, CardOrder inOrder)
-      : _regionType = inRType,
-        _regionOrder = inOrder;
+  RegionRule(CardOrder inOrder) : _regionOrder = inOrder;
 
-  bool initCheck(List<Card> nCards, RegionType pRType, Card? cEnd) {
+  bool initCheck(List<Card> nCards, Card? cEnd) {
     if (nCards
         .any((element) => (element.suit == null || element.value == null))) {
       return false;
@@ -238,7 +299,8 @@ class RegionRule {
   ///   -
   ///
   /// Outputs: Boolean value of if that move can (true) or cannot (false) occur.
-  bool checkPlacement(List<Card> nCards, RegionType pRType, Card? cEnd,
+  bool checkPlacement(
+      List<Card> nCards, RegionType pRType, Card? cEnd, RegionType cRType,
       [int? moveLim]) {
     return true;
   }
@@ -248,9 +310,10 @@ class RegionRule {
 class CardPlayRegion extends CardContainer {
   final RegionRule _regionRule;
 
-  CardPlayRegion(RegionRule inRegionRule, CardRule inCardRule)
+  CardPlayRegion(
+      RegionRule inRegionRule, RegionType inRType, CardRule inCardRule)
       : _regionRule = inRegionRule,
-        super(inCardRule);
+        super(inCardRule, inRType);
 
   /// One or more cards being placed at the end of this region, from another region
   ///
@@ -259,10 +322,11 @@ class CardPlayRegion extends CardContainer {
   ///   - nCards: new cards being added from previous region.
   ///   - pRType: previous region's type.
   bool placeCards(List<Card> nCards, RegionType pRType) {
-    bool outRes = _regionRule.checkPlacement(nCards, pRType, super._cards.last);
+    bool outRes = _regionRule.checkPlacement(
+        nCards, pRType, super.peekLast, super.regionType);
 
     if (outRes) {
-      super.addCards(-1, nCards);
+      super.addCards(nCards, -1);
     }
 
     return outRes;

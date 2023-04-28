@@ -17,53 +17,97 @@ package GenericSolitaire{
         invalidVal
     }
 
+    ' CardRule
     class CardRule{
-        -suitMax: Int
-        -valMax: Int
+        {static} -suitMax: Int
+        {static} -valMax: Int
         ---
         +CardRule(inSuitMax: Int, inValMax:Int)
-        +getSuitMax: Int
-        +getValMax: Int
+        +{get} suitMax: Int
+        +{get} valMax: Int
         ....
         +checkCard(inSuit: Int, inVal: Int): CardRes
     }
 
+    ' Card
     class Card {
-        -cardSuit: Int
-        -cardValue: Int
+        -cardSuit: Int?
+        -cardValue: Int?
         ---
-        +Card(inRule: CardRule)
         +Card(inRule: CardRule, inSuit: Int?, inVal: Int?)
+        +{get} suit: Int
+        +{get} value: Int
         ....
-        setCardVals(inSuit: Int, inVal: Int): CardRes
+        +setCardVals(inSuit: Int?, inVal: Int?): CardRes
         +copyCard(inCard): CardRes
     }
+    Card <|-- CardRule : extends
 
-    note right of Card
+    note left of Card
         ex for french cards cardVal
         will be 0-12(non inclusive),
         with the face cards being 10-12
     end note
 
-    class CardDeck {
-        -numCards: Int
-        -cards: Card[]
-        ---
-        +CardDeck(numDecks: Int)
-        +shuffle(): Boolean
-        +popCard(): Card
+    enum RegionType{
+        drawDeck
+        graveyard
+        tableau
+        foundation
     }
 
-    abstract class CardOrderRule {
+    class CardContainer {
+        -cards:Card[]
+        {static} -cardRule: CardRule
+        {static} -regionType: RegionType
+        ---
+        +CardContainer(inRule: CardRule, inRType: RegionType)
+        +{get} numCards: Int
+        +{get} peekCards(): Card[]
+        +{get} peekLast: Card
+        +{get} regionType: RegionType
+        ....
+        +clearCards(): Void
+        +popCards(index: Int=-1): Card[]
+        +addCards(nCards: Card[], index: Int=-1): Boolean
+    }
+
+    CardContainer "1" *-- "many" Card : contains
+    CardContainer "1" *-- "1" CardRule : contains
+    CardContainer "1" *-- "1" RegionType : represents
+
+    class CardDeck {
+        {static} -cycleMax: Int=0
+        -cycleCount: Int=0
+        -drawDeck: CardContainer
+        -graveyard: CardContainer
+        ---
+        +CardDeck(inRule: CardRule, inNDecks: Int, inCyMax: Int=0)
+        +{get} cycleCount: int
+        ....
+        +shuffle(otherCards: Card[]): Void
+        +drawCards(numDraw: Int=1): Card[]
+        +addToGraveyard(numDispose: Int=1): Void
+        +cycleDeck(): Boolean
+    }
+    CardDeck "1" *-- "2" CardContainer : contains
+
+    class CardOrderRule {
         +checkPlacement(prevCard: Card,
         nextCard: Card): Boolean
     }
 
-    note bottom of CardOrderRule
+    note left of CardOrderRule
         This will be overloaded with
         specific game implementations
         for tableau, foundation, etc.
     end note
+
+    enum OrderDirection {
+        ascending
+        descending
+        both
+    }
 
     class CardPlayRegion {
         -suitRule: {abstract} CardOrderRule[]
@@ -104,11 +148,9 @@ package GenericSolitaire{
         with rules being calculated by
         CardPlayRegions.
     end note
-    CardRule <|.. CardRes : uses
-    Card <|.. CardRes : uses
-    Card <|-- CardRule : extends
+
+
     CardOrderRule <|.. Card : uses
-    CardDeck "1" *-- "many" Card : contains
     CardPlayRegion "many" *-- "many" CardOrderRule : contains
 
     CardBoard "1" *-- "many" CardPlayRegion : contains
